@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import "./login.scss";
 import { useState } from "react";
 // import { useNavigate } from "react-router-dom";
@@ -13,6 +14,10 @@ const Login = () => {
         url: URL.createObjectURL(e.target.file[0]),
       });
     }
+  };
+  const handleLogin = (e) => {
+    e.preventDefault();
+    toast.warn("hello");
   };
   // const navigate = useNavigate();
   return (
@@ -34,7 +39,7 @@ const Login = () => {
       <div className="separator"></div>
       <div className="item">
         <h2>Create</h2>
-        <form>
+        <form onSubmit={handleLogin}>
           <label htmlFor="file">
             <img src={avatar.url || "./avatar.png"} alt="" />
             sfsdvds
