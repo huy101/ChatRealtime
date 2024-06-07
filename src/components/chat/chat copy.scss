@@ -36,7 +36,6 @@
             }
         }
         .icon {
-            cursor: not-allowed;
             display: flex;
             gap: 20px;
             img {
@@ -121,35 +120,32 @@
             img {
                 width: 20px;
                 height: 20px;
-                cursor: not-allowed;
+                cursor: pointer;
             }
         }
 
         input {
-            flex: 1;
+            display: 1;
             background-color: var(--darkBlue);
             border: none;
             outline: none;
             color: white;
-            padding: 20px 30px 20px 30px;
+            padding: 20px;
             border-radius: 10px;
-            font-size: 18px;
+            font-size: 16px;
         }
         .emoji {
             position: relative;
-            img {
-                width: 30px;
-                height: 30px;
-                // position: absolute;
-                // bottom: 50px;
-                // left: 10px;
+            .picker {
+                position: absolute;
+                bottom: 50px;
+                left: 10px;
             }
-            cursor: pointer;
         }
         .sendButton {
             background-color: #5183fe;
             color: white;
-            padding: 7px 17px;
+            padding: 10px 20px;
             border: none;
             border-radius: 5px;
             cursor: pointer;

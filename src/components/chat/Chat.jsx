@@ -1,17 +1,89 @@
 import { useEffect, useRef, useState } from "react";
 import "./chat.scss";
 import EmojiPicker from "emoji-picker-react";
+import { db } from "../../lib/firebase";
+import {
+  arrayUnion,
+  doc,
+  getDoc,
+  onSnapshot,
+  updateDoc,
+} from "firebase/firestore";
+import { useChatStore } from "../../lib/chatStore";
+import { useUserStore } from "../../lib/userStore";
+
 const Chat = () => {
+  const { chatId, user } = useChatStore();
+  const { currentUser } = useUserStore();
+  const [chat, setChat] = useState();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
+  const endRef = useRef(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatId]);
+
+  useEffect(() => {
+    if (!chatId) return;
+
+    const unSub = onSnapshot(doc(db, "chats", chatId), (res) => {
+      setChat(res.data());
+    });
+
+    return () => {
+      unSub();
+    };
+  }, [chatId]);
+
   const handleEmoji = (e) => {
     setText((prev) => prev + e.emoji);
     setOpen(false);
   };
-  const endRef = useRef(null);
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  });
+
+  const handleSend = async () => {
+    if (text === "") return;
+
+    try {
+      await updateDoc(doc(db, "chats", chatId), {
+        messages: arrayUnion({
+          senderId: currentUser.id,
+          text,
+          createdAt: new Date(),
+        }),
+      });
+
+      const userIDs = [currentUser.id, user.id];
+      userIDs.forEach(async (id) => {
+        const userChatsRef = doc(db, "userchats", id);
+        const userChatsSnapshot = await getDoc(userChatsRef);
+
+        if (userChatsSnapshot.exists()) {
+          const userChatsData = userChatsSnapshot.data();
+          const chatIndex = userChatsData.chats.findIndex(
+            (c) => c.chatId === chatId
+          );
+
+          if (chatIndex !== -1) {
+            userChatsData.chats[chatIndex].lastMessage = text;
+            userChatsData.chats[chatIndex].isSeen = id === currentUser.id;
+            userChatsData.chats[chatIndex].updatedAt = Date.now();
+            await updateDoc(userChatsRef, {
+              chats: userChatsData.chats,
+            });
+          }
+        }
+      });
+
+      setText("");
+      const createdAt = new Date();
+      console.log("createdAt:", createdAt);
+      // Clear the input after sending
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   return (
     <div className="Chat">
       <div className="top">
@@ -29,43 +101,21 @@ const Chat = () => {
         </div>
       </div>
       <div className="center">
-        <div className="message own">
-          <div className="text">
-            <p>
-              Lorem ipsum, dolor sit amet consectetur adipisicing elit. Iusto
-              unde sequi fugiat possimus laborum deserunt itaque explicabo.
-              Voluptas enim eveniet eius dignissimos. Dolorum ea fuga fugit,
-              adipisci optio itaque accusantium.
-            </p>
-            <span>1 phut truoc</span>
+        {chat?.messages?.map((message) => (
+          <div
+            className={`message ${
+              message.senderId === currentUser.id ? "own" : ""
+            }`}
+            key={message.createdAt}
+          >
+            <div className="text">
+              <p>{message.text}</p>
+              {message.img && <img src={message.img} alt="" />}
+              <div>{new Date(message.createdAt).toLocaleTimeString()}</div>
+            </div>
           </div>
-        </div>
-        <div className="message">
-          <img src="./avatar.png" alt="" />
-          <div className="text">
-            <p>
-              Lorem ipsum, dolor sit amet consectetur adipisicing elit. Iusto
-              unde sequi fugiat possimus laborum deserunt itaque explicabo.
-              Voluptas enim eveniet eius dignissimos. Dolorum ea fuga fugit,
-              adipisci optio itaque accusantium.
-            </p>
-            <span>1 phut truoc</span>
-          </div>
-        </div>
+        ))}
         <div className="" ref={endRef}></div>
-        <div className="message own">
-          <div className="text">
-            <img
-              src="https://i0.wp.com/picjumbo.com/wp-content/uploads/magical-spring-forest-scenery-during-morning-breeze-free-photo.jpg?w=600&quality=80"
-              alt=""
-            />
-            <p>
-              Lorem ipsum, dolor sit amet consectetur adipis elit. Iusto
-              uaevcadvadvds
-            </p>
-            <span>1 phut truoc</span>
-          </div>
-        </div>
       </div>
       <div className="bottom">
         <div className="icons">
@@ -89,9 +139,12 @@ const Chat = () => {
             <EmojiPicker open={open} onEmojiClick={handleEmoji} />
           </div>
         </div>
-        <div className="sendButton">Send</div>
+        <div className="sendButton" onClick={handleSend}>
+          Send
+        </div>
       </div>
     </div>
   );
 };
+
 export default Chat;

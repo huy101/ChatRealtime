@@ -1,5 +1,6 @@
+import { auth } from "../../lib/firebase";
 import "./Details.scss";
-import React, { useState } from "react";
+import { useState } from "react";
 const Details = () => {
   const [open, setOpen] = useState("false");
   return (
@@ -131,7 +132,7 @@ const Details = () => {
           </div>
         </div>
         <button>Block user</button>
-        <button className="logout"></button>
+        <button className="logout" onClick={() => auth.signOut()}></button>
       </div>
     </div>
   );
